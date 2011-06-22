@@ -1,8 +1,11 @@
 package test.scala
 
 import _root_.guide._
-import org.scalatest.matchers.{ShouldMatchers, MustMatchers}
-import org.scalatest.{FunSuite, FlatSpec, GivenWhenThen, FeatureSpec}
+import org.scalatest.matchers.{ShouldMatchers}
+import java.awt.{Dimension}
+import swing.Frame
+import org.scalatest._
+import main.scala.guide.StoryEditor
 
 //class StorySpec extends FlatSpec with GivenWhenThen with ShouldMatchers{
 //
@@ -26,6 +29,110 @@ class StoryFunSpec extends FunSuite with ShouldMatchers{
     story.steps.size should be (1)
   }
 }
+
+class StoryEditorInteractionSpec extends FunSuite {
+
+  test("StoryEditor's look and feel") {
+    val se = new StoryEditor
+    se.visible = true
+  }
+}
+
+class StoryEditorFeatureSpec extends FeatureSpec with ShouldMatchers with GivenWhenThen with BeforeAndAfter {
+
+  var editor : StoryEditor = _
+
+  before {
+     editor = new StoryEditor
+     editor.visible = true
+  }
+
+  after {
+    editor.dispose
+  }
+
+  feature("User can select a step from the list view"){
+
+    scenario("User click on the first step"){
+
+
+    }
+
+    scenario("User starts the editor empty"){
+
+
+
+    }
+
+    scenario("Selection match"){
+
+
+      //editor.currentStep should be
+      println(editor.storyListView.selection.items(0))
+      println(editor.stepEditView.step)
+
+
+    }
+
+  }
+
+
+}
+
+
+class StoryListViewInteractionSpec extends FeatureSpec with ShouldMatchers with GivenWhenThen with BeforeAndAfter {
+
+  var win: Frame  = _
+  var view: StoryListView = _
+  var story: Story = _
+
+  before {
+      win = new Frame{
+        visible = true
+        peer.setAlwaysOnTop(true)
+      }
+
+      //step = StepFixture.example
+      story = new Story
+      view = new StoryListView(story)
+      story.steps += StepFixture.example
+      story.steps += StepFixture.example
+      story.steps += StepFixture.example
+      story.steps += StepFixture.example
+
+      view.preferredSize = new Dimension(200,600)
+      win.contents = view
+  }
+
+  after {
+
+  }
+
+  feature("User can see a vertical list of steps"){
+
+    scenario("Some steps are loaded"){
+      //win.visible = true
+
+      var step1 = StepFixture.example
+      var step2 = StepFixture.example
+
+      var step = story.steps(0)
+
+      //story.steps += step1
+      win.contents = view
+      step.elements += CircleElement((150,200,200,200))
+
+      val s1 = story.steps(1)
+      val e = s1.elements(0)
+      s1.elements -= e
+
+
+      win.visible = true
+      //st
+    }
+  }
+}
+
 
 class StoryListViewSpec extends FeatureSpec with ShouldMatchers with GivenWhenThen {
 

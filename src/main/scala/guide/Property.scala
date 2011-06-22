@@ -13,6 +13,9 @@ class Property[T](var value : T) {
             fireEvent
         }
     }
+
+    //override def ==(aValue : AnyRef) : Boolean = value == aValue
+    def ===(aProperty : Property[T]) = value == aProperty.value
  
     def registerListener(l : T => Unit) {
         listeners = l :: listeners

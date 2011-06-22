@@ -5,9 +5,9 @@ import org.scalatest.matchers.{MatchResult, BeMatcher, ShouldMatchers}
 import java.awt.{Dimension, Point}
 import javax.imageio.ImageIO
 import java.io.File
-import swing.{Frame, UIElement, Component}
-import swing.event.{KeyPressed, MousePressed}
 import org.scalatest._
+import swing.{Component, Frame, UIElement}
+import swing.event.{MousePressed, KeyPressed}
 
 class SimpleWindow extends Frame {
   location = new Point(100,100)
@@ -18,50 +18,20 @@ class StepEditViewSpec extends FeatureSpec with ShouldMatchers with GivenWhenThe
 
   object SingleSpec extends Tag("SingleSpec")
 
-  override def run (testName: Option[String], reporter: Reporter, stopper: Stopper,
-                    filter: Filter, configMap: Map[String, Any], distributor: Option[Distributor],
-                    tracker: Tracker) : Unit = {
-    super.run(testName, reporter, stopper, new Filter(Some(Set("SingleSpec")),Set.empty[String]),
-      configMap, distributor, tracker)
-  }
+//  override def run (testName: Option[String], reporter: Reporter, stopper: Stopper,
+//                    filter: Filter, configMap: Map[String, Any], distributor: Option[Distributor],
+//                    tracker: Tracker) : Unit = {
+//    super.run(testName, reporter, stopper, new Filter(Some(Set("SingleSpec")),Set.empty[String]),
+//      configMap, distributor, tracker)
+//  }
 
-  class VisibilityMatcher extends BeMatcher[UIElement] {
-    def apply(left: UIElement) =
-      MatchResult( left.visible, left.toString + " was visible", left.toString + " was invisible")
-
-  }
-
-  val visible = new VisibilityMatcher
-
-  def makeStep : Step = {
-      var step = new Step
-
-    	var element = new Element{x = 150; y = 151; width = 210; height = 20}
-
-    	//step.elements += element
-
-    	var textElement = new TextElement("some text") {
-    		x = 10; y = 10; width = 100; height = 110;
-    	}
-
-    	step.elements += textElement
-
-    	var circle = new CircleElement {
-    	  x = 50; y = 200; width = 100; height = 100
-    	}
-
-    	step.elements += circle
-
-    	var rect = new RectangleElement {
-    	  x = 100; y = 300; width = 100; height = 50
-    	}
-
-    	step.elements += rect
-
-    	step.contextImage = ImageIO.read(new File("screen1.png"))
-
-    	step
-  }
+//  class VisibilityMatcher extends BeMatcher[UIElement] {
+//    def apply(left: UIElement) =
+//      MatchResult( left.visible, left.toString + " was visible", left.toString + " was invisible")
+//
+//  }
+//
+//  val visible = new VisibilityMatcher
 
   var win: SimpleWindow = _
   var view: StepEditView = _
@@ -72,7 +42,7 @@ class StepEditViewSpec extends FeatureSpec with ShouldMatchers with GivenWhenThe
       win.visible = true
       win.peer.setAlwaysOnTop(true)
 
-      step = makeStep
+      step = StepFixture.example
       view = new StepEditView(step)
       view.component.preferredSize = new Dimension(500,500)
       win.contents = view.component
@@ -173,11 +143,8 @@ class StepEditViewSpec extends FeatureSpec with ShouldMatchers with GivenWhenThe
 
   //object SingleFeatureSpec extends Tag("scala.test.SingleFeatureSpec")
 
-
-
-  feature("Elements can be deleted from the edit view"){
-
-    scenario("selecting elements in single selection mode"){
+  feature("Elements can be selected"){
+    scenario("selecting elements in single selection mode and delete them"){
 
       given("two elements in the step e1 and e2")
       val e1 = view.step.elements(1)
@@ -206,21 +173,34 @@ class StepEditViewSpec extends FeatureSpec with ShouldMatchers with GivenWhenThe
 
       and("the list of selected items contains e2")
       view.selection.items should contain(e2)
+    }
+  }
+
+  feature("Elements can be deleted from the edit view"){
+
+    scenario("selecting and deleting an element",SingleSpec){
+
+      given("an element")
+      val e = view.step.elements(1)
 
       val n = view.step.elements.size
 
-      when("the selected element is deleted")
+      when("this element is selected")
+      view.selection += e
+
+      and("and is deleted")
       view.deleteSelected
 
       then("the step should have one fewer elements")
       view.step.elements should have size(n-1)
 
-      and("nothing should be selected")
+      and("the step should no longer contain the deleted element")
+      view.step.elements should (not contain(e))
+
+      and("the view should not hae anything selected")
       view.selection.indices should have size(0)
       view.selection.items should have size(0)
 
-      and("the step should no longer contain the deleted element")
-      view.step.elements should (not contain(e2))
     }
 
     scenario("deleting all elements one by one") {
@@ -244,22 +224,18 @@ class StepEditViewSpec extends FeatureSpec with ShouldMatchers with GivenWhenThe
 
   feature("New elements can be added"){
 
-    scenario("adding a new text element", SingleSpec){
+    scenario("adding a new text element"){
 
       given("a new text element")
-      val e = new TextElement("New Text") {
-        x = 10; y = 50; width = 10; height = 10;
-      }
+      val e = TextElement("New Text",(10,50,10,10))
 
       evaluating {view.viewForElement(e)} should produce [NoSuchElementException]
 
       when("this element is added to the step")
       step.elements += e
 
-      then("a view is creatd for this step")
-      view.viewForElement(e)
-
-      and("this view should be selected")
+      then("a view is created for this step")
+      //view.viewForElement(e)
 
     }
   }

@@ -29,10 +29,29 @@ class Step {
   object elements extends ArrayBuffer[Element] with Publisher {
     override def +=(e:Element) : this.type = {
       super.+=(e)
+      println("step+=: " + e)
       publish(new ElementAdded(Step.this, e))
       this
     }
+    override def -=(e:Element) : this.type = {
+      super.-=(e)
+      println("step-=: " + e)
+      publish(new ElementRemoved(Step.this, e))
+      this
+    }
+    override def clear() = {
+      val templist = this.map(x => x)
+      super.clear()
+      templist.foreach( e => publish(new ElementRemoved(Step.this,e)))
+    }
   }
+
+  def copy : Step = {
+    var copy = new Step
+    elements.foreach { e => copy.elements += e.copy}
+    copy
+  }
+
   
   override def toString() = {
     
@@ -63,7 +82,7 @@ class StepOverlayView(var step : Step){
   	panel.contents += comp 
 
   })
-  
+
   def start {
     
     var win = new TransparentWindow
@@ -104,24 +123,6 @@ object Step {
 
     	step
   }
-
-  def main(args : Array[String]) {
-
-    val win = new Frame{
-      location = new Point(100,100)
-      size = new Dimension(500,500)
-    }
-    win.visible = true
-    win.peer.setAlwaysOnTop(true)
-
-    val step = makeStep
-    val view = new StepEditView(step)
-    view.component.preferredSize = new Dimension(500,500)
-    win.contents = view.component
-
-
-  }
-
 }
 
 class TransparentWindow extends JWindow {
@@ -195,7 +196,6 @@ class StepEditView (var step : Step) extends Reactor{
   listenTo(step.elements)
   reactions += {
     case ElementAdded(src, e) => {
-      //println("StepEditView is notified an element is added to a step")
       insertViewForElement(e)
     }
   }
@@ -266,7 +266,19 @@ class StepEditView (var step : Step) extends Reactor{
 
   def viewForElement(e:Element) : ElementView = elementViewMap(e)
 
-  
+
+  private def deleteElement(e : Element) {
+    step.elements -= e
+    selection.clear()
+
+    val comp = elementViewMap(e).component
+
+    panel.contents -= comp
+    panel.repaint
+
+    elementViewMap -= e
+    viewMap -= comp
+  }
 
   private def insertViewForElement( e: Element){
       val view = View.create(e)
@@ -298,16 +310,6 @@ class StepEditView (var step : Step) extends Reactor{
   }
 
   def deleteSelected : Unit = {
-
-    def deleteElement(e : Element) {
-      step.elements -= e
-      selection.clear()
-      panel.contents -= (elementViewMap(e).component)
-      panel.repaint
-
-      elementViewMap -= e
-    }
-
     selection.items.foreach(deleteElement)
   }
 

@@ -1,15 +1,42 @@
 package guide
-import scala.swing.ListView
 import scala.swing.ListView.AbstractRenderer
-import scala.swing.BorderPanel
 import javax.swing.BorderFactory
-import scala.swing.Component
 import java.awt.Dimension
 import collection.mutable.ArrayBuffer
+import swing.event.Event
+import swing._
+
+trait StoryEvent extends Event {
+  val source: Story
+}
+
+case class StepAdded(source: Story, step: Step) extends StoryEvent
+case class StepRemoved(source: Story, step: Step) extends StoryEvent
+case class StepModified(source: Story, step: Step) extends StoryEvent
+
 
 class Story {
 
-	var steps = ArrayBuffer.empty[Step]
+	object steps extends ArrayBuffer[Step] with Publisher with Reactor {
+
+    reactions += {
+      case e: ElementRemoved => {
+        println("removed")
+        publish(new StepModified(Story.this, e.source))
+      }
+      case e: ElementAdded => {
+        println("added")
+        publish(new StepModified(Story.this, e.source))
+      }
+    }
+
+    override def +=(step : Step) : this.type = {
+        super.+=(step)
+        listenTo(step.elements)
+        publish(new StepAdded(Story.this, step))
+        this
+    }
+  }
 
 }
 
@@ -18,7 +45,15 @@ class ListTileView extends BorderPanel {
 }
 
 
-class StoryListView(var story : Story) extends ListView(story.steps) {
+class StoryListView(var story : Story) extends ListView(story.steps) with Reactor{
+
+  listenTo(story.steps)
+  reactions += {
+    case StepModified(story: Story, step: Step) => {
+      println("modified: " + step + step.hashCode)
+      repaint
+    }
+  }
     
 	class StepListItemRenderer(var c: ListTileView) extends AbstractRenderer[Step,Component](c){
 
